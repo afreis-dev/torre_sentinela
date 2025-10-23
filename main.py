@@ -1,90 +1,106 @@
 import os
+
 def torre_sentinela():
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
-        ok  = lambda c,l: 0 <= c < 8 and 0 <= l < 8
-        p2c = lambda s: (ord(s[0]) - 97, int(s[1]) - 1)
-        c2p = lambda c,l: chr(c + 97) + str(l + 1)
+        coordenada_valida = lambda coluna, linha: 0 <= coluna < 8 and 0 <= linha < 8
+        posicao_para_coordenada = lambda posicao: (ord(posicao[0]) - 97, int(posicao[1]) - 1)
+        coordenada_para_posicao = lambda coluna, linha: chr(coluna + 97) + str(linha + 1)
 
-        def ler_pos(msg):
+        def ler_posicao(mensagem):
             while True:
-                s = input(msg).strip().lower()
-                if len(s) == 2 and 'a' <= s[0] <= 'h' and '1' <= s[1] <= '8':
-                    return p2c(s)
-                t = s.replace(',', ' ').split()
-                if len(t) == 2 and all(x.isdigit() for x in t):
-                    c, l = int(t[0]) - 1, int(t[1]) - 1
-                    if ok(c, l): return (c, l)
+                entrada_usuario = input(mensagem).strip().lower()
+                if len(entrada_usuario) == 2 and 'a' <= entrada_usuario[0] <= 'h' and '1' <= entrada_usuario[1] <= '8':
+                    return posicao_para_coordenada(entrada_usuario)
+                entrada_normalizada = entrada_usuario.replace(',', ' ').split()
+                if len(entrada_normalizada) == 2 and all(valor.isdigit() for valor in entrada_normalizada):
+                    coluna, linha = int(entrada_normalizada[0]) - 1, int(entrada_normalizada[1]) - 1
+                    if coordenada_valida(coluna, linha):
+                        return (coluna, linha)
                 print(">> posição inválida. Use d5 ou '4 5'.")
 
         print()
-        col_t, lin_t = ler_pos("Posição da torre (ex.: d5 ou '4 5'): ")
+        coluna_torre, linha_torre = ler_posicao("Posição da torre (ex.: d5 ou '4 5'): ")
         while True:
-            n = input("Quantas peças inimigas? (0..63): ").strip()
-            if n.isdigit() and 0 <= int(n) <= 63:
-                n = int(n); break
+            quantidade_inimigos = input("Quantas peças inimigas? (0..63): ").strip()
+            if quantidade_inimigos.isdigit() and 0 <= int(quantidade_inimigos) <= 63:
+                quantidade_inimigos = int(quantidade_inimigos)
+                break
             print(">> número inválido.")
 
-        usados, pecas = {(col_t, lin_t)}, []
-        for i in range(1, n + 1):
+        posicoes_ocupadas, posicoes_inimigas = {(coluna_torre, linha_torre)}, []
+        for indice_peca in range(1, quantidade_inimigos + 1):
             while True:
-                c, l = ler_pos(f"Peça #{i}: ")
-                if (c, l) in usados:
+                coluna_inimiga, linha_inimiga = ler_posicao(f"Peça #{indice_peca}: ")
+                if (coluna_inimiga, linha_inimiga) in posicoes_ocupadas:
                     print(">> já ocupada.")
                 else:
-                    usados.add((c, l)); pecas.append((c, l)); break
+                    posicoes_ocupadas.add((coluna_inimiga, linha_inimiga))
+                    posicoes_inimigas.append((coluna_inimiga, linha_inimiga))
+                    break
 
-        dirs = [(0,1),(0,-1),(-1,0),(1,0)]
-        s = set(pecas); capt = []
-        for dx, dy in dirs:
-            x, y = col_t, lin_t
+        direcoes_torre = [(0, 1), (0, -1), (-1, 0), (1, 0)]
+        posicoes_inimigas_set = set(posicoes_inimigas)
+        posicoes_capturaveis = []
+        for delta_coluna, delta_linha in direcoes_torre:
+            coluna_atual, linha_atual = coluna_torre, linha_torre
             while True:
-                x += dx; y += dy
-                if not ok(x, y): break
-                if (x, y) in s: capt.append((x, y)); break
+                coluna_atual += delta_coluna
+                linha_atual += delta_linha
+                if not coordenada_valida(coluna_atual, linha_atual):
+                    break
+                if (coluna_atual, linha_atual) in posicoes_inimigas_set:
+                    posicoes_capturaveis.append((coluna_atual, linha_atual))
+                    break
 
-        FANCY = True
-        CELL_W = 2
-        SEP = " "
+        modo_decorativo = True
+        largura_celula = 2
+        separador_celula = " "
 
-        if FANCY:
-            bg_light, bg_dark = "░░", "▓▓"
-            sym_t, sym_x, sym_i = "♜", "×", "●"
+        if modo_decorativo:
+            celula_clara, celula_escura = "░░", "▓▓"
+            simbolo_torre, simbolo_captura, simbolo_inimigo = "♜", "×", "●"
         else:
-            bg_light, bg_dark = "..", "::"
-            sym_t, sym_x, sym_i = "T", "x", "o"
+            celula_clara, celula_escura = "..", "::"
+            simbolo_torre, simbolo_captura, simbolo_inimigo = "T", "x", "o"
 
-        fix = lambda s: (s + " " * CELL_W)[:CELL_W]
+        formatar_celula = lambda texto: (texto + " " * largura_celula)[:largura_celula]
 
-        B = [[None]*8 for _ in range(8)]
-        for l in range(8):
-            for c in range(8):
-                B[7-l][c] = fix(bg_light if (c + l) % 2 == 0 else bg_dark)
+        tabuleiro = [[None] * 8 for _ in range(8)]
+        for linha in range(8):
+            for coluna in range(8):
+                tabuleiro[7 - linha][coluna] = formatar_celula(
+                    celula_clara if (coluna + linha) % 2 == 0 else celula_escura
+                )
 
-        for c, l in pecas: B[7-l][c] = fix(sym_i)
-        for c, l in capt:  B[7-l][c] = fix(sym_x)
-        B[7-lin_t][col_t] = fix(sym_t)
+        for coluna_inimiga, linha_inimiga in posicoes_inimigas:
+            tabuleiro[7 - linha_inimiga][coluna_inimiga] = formatar_celula(simbolo_inimigo)
+        for coluna_captura, linha_captura in posicoes_capturaveis:
+            tabuleiro[7 - linha_captura][coluna_captura] = formatar_celula(simbolo_captura)
+        tabuleiro[7 - linha_torre][coluna_torre] = formatar_celula(simbolo_torre)
 
         print()
-        for r in range(8):
-            linha = SEP.join(B[r])
-            print(f"{8 - r:>2}  {linha}")
+        for indice_linha in range(8):
+            linha_formatada = separador_celula.join(tabuleiro[indice_linha])
+            print(f"{8 - indice_linha:>2}  {linha_formatada}")
 
-        header = SEP.join(f"{chr(97+c):^{CELL_W}}" for c in range(8))
-        print("    " + header)
-        print(f"   {sym_t} torre   {sym_x} capturável   {sym_i} inimiga\n")
+        cabecalho_colunas = separador_celula.join(
+            f"{chr(97 + coluna):^{largura_celula}}" for coluna in range(8)
+        )
+        print("    " + cabecalho_colunas)
+        print(f"   {simbolo_torre} torre   {simbolo_captura} capturável   {simbolo_inimigo} inimiga\n")
 
-        capt.sort(key=lambda z: (z[0], z[1]))
-        out = [c2p(c, l) for c, l in capt]
-        k = len(out)
+        posicoes_capturaveis.sort(key=lambda coordenada: (coordenada[0], coordenada[1]))
+        posicoes_captura_texto = [coordenada_para_posicao(coluna, linha) for coluna, linha in posicoes_capturaveis]
+        quantidade_capturas = len(posicoes_captura_texto)
 
-        if k == 0:
+        if quantidade_capturas == 0:
             print("0\nNenhuma peça pode ser capturada desta vez. ")
         else:
-            print(k)
-            print(" ".join(out))
-            msg = "peça" if k == 1 else "peças"
-            print(f"\n♜ A torre consegue capturar {k} {msg} nesta jogada! ")
+            print(quantidade_capturas)
+            print(" ".join(posicoes_captura_texto))
+            sufixo_peca = "peça" if quantidade_capturas == 1 else "peças"
+            print(f"\n♜ A torre consegue capturar {quantidade_capturas} {sufixo_peca} nesta jogada! ")
 
         if input("\nOutra rodada? (s/n): ").strip().lower() != 's':
             print("\nEncerrando...")
