@@ -103,7 +103,7 @@ def torre_sentinela():
             print(f"\n♜ A torre consegue capturar {quantidade_capturas} {sufixo_peca} nesta jogada! ")
 
         if input("\nOutra rodada? (s/n): ").strip().lower() != 's':
-            print("\nEncerrando...")
+            print("\nQue mazela...")
             break
 
 torre_sentinela()
